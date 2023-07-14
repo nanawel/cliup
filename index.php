@@ -7,16 +7,17 @@ require __DIR__ . '/vendor/autoload.php';
 
 ini_set('xdebug.default_enable', false);
 ini_set('html_errors', false);
+ini_set('expose_php', 'off');
 
 $app = AppFactory::create();
 
 $context = [
     'APP_VERSION'       => getenv('CLIUP_VERSION') ?: '(dev)',
     'DICT_FILE'         => getenv('DICT_FILE') ?: __DIR__ . '/nouns.en.lst',
-    'EXPIRY_DELAY'      => getenv('EXPIRY_DELAY') ?: 60 * 24,                     // 1 DAY
+    'EXPIRATION_TIME'   => getenv('EXPIRATION_TIME') ?: 60 * 60 * 24,                 // 1 DAY
+    'HASH_SALT'         => getenv('HASH_SALT') ?: '',
     'PASS_WORDS_COUNT'  => min(10, getenv('PASS_WORDS_COUNT') ?: 3),
-    'MAX_UPLOAD_SIZE'   => getenv('MAX_UPLOAD_SIZE') ?: 1 * 1024 * 1024,          // 1 MB
-    'SECRET_KEY'        => getenv('SECRET_KEY') ?: '',
+    'MAX_UPLOAD_SIZE'   => getenv('MAX_UPLOAD_SIZE') ?: 1 * 1024 * 1024,              // 1 MB
     'TMP_DIR'           => getenv('TMP_DIR') ?: '/tmp',
     'UPLOAD_DIR'        => getenv('UPLOAD_DIR') ?: '/tmp',
     'UPLOAD_DIR_PERMS'  => getenv('UPLOAD_DIR_PERMS') ?: 0700,
@@ -57,7 +58,7 @@ function generatePassword() {
 
 function getUploadHash(string $password) {
     global $context;
-    return sha1($context['SECRET_KEY'] . $password);
+    return sha1($context['HASH_SALT'] . $password);
 }
 
 function getUploadDir(string $uploadHash) {
@@ -134,10 +135,26 @@ function processUploadedFiles($uploadName, array $files, Request $request, Respo
 }
 
 $app->get('/', function (Request $request, Response $response, $args) use ($context) {
+    $expirationTimeHuman = human_date_interval(
+        new \DateInterval('PT' . ($context['EXPIRATION_TIME']) . 'S'),
+        [
+            'months' => '%d month(s)',
+            'days' => '%d day(s)',
+            'hours' => '%d hour(s)',
+            'minutes' => '%d minute(s)',
+        ]
+    );
     $response = $response->withHeader('Content-Type', 'text/plain');
-    $response->getBody()->write(<<<EOT
+    $response->getBody()->write(<<<"EOT"
+  _______   ____        
+ / ___/ /  /  _/_ _____ 
+/ /__/ /___/ // // / _ \
+\___/____/___/\_,_/ .__/
+                 /_/ 
 CLIup v{$context['APP_VERSION']}
 Please use a PUT or a POST request to send a file.
+
+Maximum file lifetime: $expirationTimeHuman
 
 ** Examples with cURL **
 Simple (using PUT):
@@ -161,7 +178,7 @@ $app->get('/{password}', function (Request $request, Response $response, $args) 
         }
 
         $filemtime = filemtime($filePath);
-        if (time() > ($filemtime + $context['EXPIRY_DELAY'] * 60)) {
+        if (time() > ($filemtime + $context['EXPIRATION_TIME'])) {
             @unlink($filePath);
             @unlink($metadataFilePath);
 
@@ -185,7 +202,50 @@ $app->get('/{password}', function (Request $request, Response $response, $args) 
         ->withAddedHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
         ->withHeader('Cache-Control', 'post-check=0, pre-check=0')
         ->withHeader('Pragma', 'no-cache')
+        ->withHeader('CLIup-Upload-Expiration', (date('c', $filemtime + $context['EXPIRATION_TIME'])))
         ->withBody((new \Slim\Psr7\Stream(fopen($filePath, 'rb'))));
+
+    return $response;
+});
+
+$app->delete('/{password}', function (Request $request, Response $response, $args) {
+    global $context;
+
+    $uploadHash = getUploadHash($args['password']);
+    $filePath = getUploadFilePath($uploadHash);
+    $metadataFilePath = getUploadMetdataFilePath($uploadHash);
+
+    try {
+        if (!is_file($filePath)) {
+            throw new \Exception('File not found');
+        }
+
+        $filemtime = filemtime($filePath);
+        if (time() > ($filemtime + $context['EXPIRATION_TIME'])) {
+            @unlink($filePath);
+            @unlink($metadataFilePath);
+
+            throw new \Exception('Expired');
+        }
+    }
+    catch (\Throwable $e) {
+        $response->getBody()->write("ERROR: No file found with that password, or it has expired.\n");
+        return $response->withStatus(404, 'No file found with that password, or it has expired');
+    }
+
+    if (is_file($filePath)) {
+        $success = @unlink($filePath);
+        if (is_file($metadataFilePath)) {
+            $success &= @unlink($metadataFilePath);
+        }
+    }
+
+    if ($success) {
+        $response->getBody()->write("OK, the file has been deleted.\n");
+    } else {
+        $response->getBody()->write("ERROR: Sorry, unable to delete the file.\n");
+        return $response->withStatus(500, 'Sorry, unable to delete the file');
+    }
 
     return $response;
 });
