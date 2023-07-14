@@ -7,7 +7,6 @@ require __DIR__ . '/vendor/autoload.php';
 
 ini_set('xdebug.default_enable', false);
 ini_set('html_errors', false);
-ini_set('expose_php', 'off');
 
 $app = AppFactory::create();
 
