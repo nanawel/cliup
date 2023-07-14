@@ -17,3 +17,6 @@ nouns-filter:
 
 server-start:
 	php $(PHP_INI_ARG) -S localhost:8080 index.php
+
+docker-build:
+	docker build -t cliup:latest .

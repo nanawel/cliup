@@ -137,7 +137,13 @@ $app->get('/', function (Request $request, Response $response, $args) use ($cont
     $response = $response->withHeader('Content-Type', 'text/plain');
     $response->getBody()->write(<<<EOT
 CLIup v{$context['APP_VERSION']}
-Please use a POST request to send a file.
+Please use a PUT or a POST request to send a file.
+
+** Examples with cURL **
+Simple (using PUT):
+    curl -T myfile.txt https://this.domain
+Alternative (using POST):
+    curl -F 'data=@myfile.txt' https://this.domain/myfile.txt
 EOT);
     return $response;
 });
