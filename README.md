@@ -27,6 +27,14 @@ with... you guessed it, another `curl` or `wget`.
 * Encrypted files on server
 * A scalable service able to serve thousands of requests
 
+# Nice! Is there a demo? 👀
+
+Well, no. For obvious reasons, running an anonymous public file-sharing service is not a good idea
+these days.
+
+So if you want to test it, install it on your own server! 👷‍♀️
+
+
 # Use 🚀
 
 ```shell
@@ -76,6 +84,16 @@ With proper upload folder and UID/GID:
 ```shell
 mkdir ./uploads
 docker run -d -p 80:8080 -v ./uploads:/srv/uploads -u 1000:1000 nanawel/cliup
+```
+
+## Purge
+
+Files are not automatically removed as there is not cronjob inside the Docker container.
+You should add such a job yourself on the host if you want expired files to be _really_
+deleted and thus space reclaimed:
+
+```shell
+docker exec <your-container> php admin.php purge
 ```
 
 ## Configuration
