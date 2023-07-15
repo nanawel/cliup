@@ -77,9 +77,12 @@ namespace CLiup {
         $dictFile->seek(PHP_INT_MAX);
         $lineCnt = $dictFile->key();
         for ($i = 0; $i < $context['PASS_WORDS_COUNT']; $i++) {
-            $dictFile->rewind();
-            $dictFile->seek(random_int(1, $lineCnt));
-            $passwords[] = trim($dictFile->fgets());
+            do {
+                $dictFile->rewind();
+                $dictFile->seek(random_int(1, $lineCnt));
+                $word = trim($dictFile->fgets());
+            } while (!$word);   // Make sure we never pick an empty word
+            $passwords[] = $word;
         }
 
         return implode('-', $passwords);

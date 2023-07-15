@@ -23,10 +23,32 @@ with... you guessed it, another `curl` or `wget`.
 
 👎 What you **don't** get with CLIup:
 
-* End-to-end encrypted file sharing service
+* An end-to-end encrypted file sharing service
 * Encrypted files on server
+* A scalable service able to serve thousands of requests
 
-# Run 🚀
+# Use 🚀
+
+```shell
+# Easiest, using curl + PUT
+curl -T myfile.bin myhost.tld
+File uploaded successfully. The password for your file is:
+institute-crisis-individual
+
+# On some other computer
+curl myhost.tld/institute-crisis-individual > myfile.bin
+```
+
+You may also use POST like so:
+
+```shell
+# You need to set the name of your file in the path after the host
+curl -F "data=@myfile.bin" myhost.tld/myfile.bin
+File uploaded successfully. The password for your file is:
+foundation-balance-february
+```
+
+# Serve 🌎
 
 ## Locally
 
@@ -50,7 +72,7 @@ mkdir ./uploads
 docker run -d -p 80:8080 -v ./uploads:/srv/uploads -u 1000:1000 nanawel/cliup
 ```
 
-# Configuration
+## Configuration
 
 You can use the following environment variables to configure the service:
 
@@ -68,5 +90,4 @@ You can use the following environment variables to configure the service:
     UPLOAD_DIR_PERMS    (default: "0700")
     UPLOAD_NAME_MAX_LEN (default: 255)
     WORDSLIST_FILE      (default: "./wordslist.txt")
-
 ```
