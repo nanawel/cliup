@@ -8,7 +8,7 @@ switch ($argv[1] ?? null) {
         $expirationTimeInMinutes = round($context['EXPIRATION_TIME'] / 60);
         chdir($context['UPLOAD_DIR']);
         $cmd = sprintf(
-            'find . -path ??/??/* -type f -mmin %d -delete',
+            'find . -path ./??/??/* -type f -mmin %d -delete',
             $expirationTimeInMinutes
         );
 
