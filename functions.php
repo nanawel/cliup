@@ -39,3 +39,20 @@ function human_date_interval(DateInterval $interval, $format = null, $separator 
 
     return implode($separator, $formattedResult);
 }
+
+/**
+ * @see https://stackoverflow.com/a/28047922/5431347
+ *
+ * @param int $bytes
+ * @return string
+ */
+function byteConvert($bytes)
+{
+    if ($bytes == 0)
+        return '0.00 B';
+
+    $s = array('B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB');
+    $e = floor(log($bytes, 1024));
+
+    return round($bytes/pow(1024, $e), 2) . ' ' . $s[$e];
+}

@@ -12,21 +12,27 @@ $app = AppFactory::create();
 
 $context = [
     'APP_VERSION'       => getenv('CLIUP_VERSION') ?: '(dev)',
-    'DICT_FILE'         => getenv('DICT_FILE') ?: __DIR__ . '/nouns.en.lst',
+    'DEBUG'             => getenv('DEBUG') ?: false,
     'EXPIRATION_TIME'   => getenv('EXPIRATION_TIME') ?: 60 * 60 * 24,                 // 1 DAY
     'HASH_SALT'         => getenv('HASH_SALT') ?: '',
     'PASS_WORDS_COUNT'  => min(10, getenv('PASS_WORDS_COUNT') ?: 3),
     'MAX_UPLOAD_SIZE'   => getenv('MAX_UPLOAD_SIZE') ?: 1 * 1024 * 1024,              // 1 MB
+    'MEMORY_LIMIT'      => getenv('MEMORY_LIMIT') ?: null,
     'TMP_DIR'           => getenv('TMP_DIR') ?: '/tmp',
     'UPLOAD_DIR'        => getenv('UPLOAD_DIR') ?: '/tmp',
     'UPLOAD_DIR_PERMS'  => getenv('UPLOAD_DIR_PERMS') ?: 0700,
+    'WORDSLIST_FILE'    => getenv('WORDSLIST_FILE') ?: __DIR__ . '/wordslist.txt',
 ];
 ini_set('upload_max_filesize', $context['MAX_UPLOAD_SIZE']);
 ini_set('post_max_size', $context['MAX_UPLOAD_SIZE']);
 ini_set('upload_tmp_dir', $context['TMP_DIR']);
 
-if (!is_file($context['DICT_FILE']) || !is_readable($context['DICT_FILE'])) {
-    throw new \Exception($context['DICT_FILE'] . ' is not readable!');
+if ($context['MEMORY_LIMIT']) {
+    ini_set('memory_limit', $context['MEMORY_LIMIT']);
+}
+
+if (!is_file($context['WORDSLIST_FILE']) || !is_readable($context['WORDSLIST_FILE'])) {
+    throw new \Exception($context['WORDSLIST_FILE'] . ' is not readable!');
 }
 
 if (!is_dir($context['UPLOAD_DIR']) || !is_writable($context['UPLOAD_DIR'])) {
@@ -42,7 +48,7 @@ if (PHP_SAPI === 'cli') {
 
 function generatePassword() {
     global $context;
-    $dictFile = new SplFileObject($context['DICT_FILE']);
+    $dictFile = new SplFileObject($context['WORDSLIST_FILE']);
     $passwords = [];
     $dictFile->seek(PHP_INT_MAX);
     $lineCnt = $dictFile->key();
@@ -90,10 +96,13 @@ function moveUploadedFile(\Psr\Http\Message\UploadedFileInterface $file, $upload
     }
     $file->moveTo(getUploadFilePath($uploadHash));
     file_put_contents(getUploadMetdataFilePath($uploadHash), json_encode([
-        'remote_ip' => $_SERVER['REMOTE_ADDR'],
+        'remote_ip' => $_SERVER['HTTP_X_REAL_IP']
+            ?? $_SERVER['HTTP_X_FORWARDED_FOR']
+            ?? $_SERVER['REMOTE_ADDR'],
         'user_agent' => $_SERVER['HTTP_USER_AGENT'],
         'upload_name' => $uploadName,
-        'created_at' => date('c')
+        'created_at' => date('c'),
+        'size' => $file->getSize()
     ]));
 }
 
@@ -134,6 +143,7 @@ function processUploadedFiles($uploadName, array $files, Request $request, Respo
 }
 
 $app->get('/', function (Request $request, Response $response, $args) use ($context) {
+    $maxFilesizeHuman = byteConvert($context['MAX_UPLOAD_SIZE']);
     $expirationTimeHuman = human_date_interval(
         new \DateInterval('PT' . ($context['EXPIRATION_TIME']) . 'S'),
         [
@@ -143,6 +153,7 @@ $app->get('/', function (Request $request, Response $response, $args) use ($cont
             'minutes' => '%d minute(s)',
         ]
     );
+
     $response = $response->withHeader('Content-Type', 'text/plain');
     $response->getBody()->write(<<<"EOT"
   _______   ____        
@@ -153,6 +164,7 @@ $app->get('/', function (Request $request, Response $response, $args) use ($cont
 CLIup v{$context['APP_VERSION']}
 Please use a PUT or a POST request to send a file.
 
+Maximum file size    : $maxFilesizeHuman ({$context['MAX_UPLOAD_SIZE']} bytes)
 Maximum file lifetime: $expirationTimeHuman
 
 ** Examples with cURL **
@@ -160,7 +172,17 @@ Simple (using PUT):
     curl -T myfile.txt https://this.domain
 Alternative (using POST):
     curl -F 'data=@myfile.txt' https://this.domain/myfile.txt
+
 EOT);
+
+    if ($context['DEBUG']) {
+        $response->getBody()->write("\n\n** DEBUG **\n" . json_encode([
+            'env' => getenv(),
+            '$_SERVER' => $_SERVER,
+            'ini' => ini_get_all()
+        ], JSON_PRETTY_PRINT) . "\n");
+    }
+
     return $response;
 });
 
@@ -276,11 +298,20 @@ $app->put('/{uploadname}', function (Request $request, Response $response, $args
     global $context;
     $fileContent = $request->getBody()->getContents();
     if (strlen($fileContent) > $context['MAX_UPLOAD_SIZE']) {
+        $response->getBody()->write("ERROR: File is too big!\n");
         return $response->withStatus(400, 'File is too big!');
     }
-    file_put_contents($file = $context['TMP_DIR'] . '/' . uniqid('CLIUP_tmp_'), $fileContent);
+    if (!file_put_contents($file = $context['TMP_DIR'] . '/' . uniqid('CLIUP_tmp_'), $fileContent)) {
+        $response->getBody()->write("ERROR: Upload has failed.\n");
+        return $response->withStatus(400, 'Upload has failed');
+    }
 
-    $response = processUploadedFiles($args['uploadname'], [new \Slim\Psr7\UploadedFile($file)], $request, $response);
+    $response = processUploadedFiles(
+        $args['uploadname'],
+        [new \Slim\Psr7\UploadedFile($file, $args['uploadname'], null, filesize($file))],
+        $request,
+        $response
+    );
 
     return $response;
 });

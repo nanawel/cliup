@@ -13,7 +13,7 @@ words-convert:
 nouns-filter:
 	textql -header -sql 'SELECT lemma WHERE pos = "n" LIMIT 1000' 'words-csv/wordFrequency-1 lemmas.csv' \
 		| grep -v '-' \
-		> nouns.en.lst
+		> wordslist.txt
 
 server-start:
 	php $(PHP_INI_ARG) -S localhost:8080 index.php
