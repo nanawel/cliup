@@ -48,6 +48,12 @@ File uploaded successfully. The password for your file is:
 foundation-balance-february
 ```
 
+To delete a file, you only need its password too:
+```shell
+curl -X DELETE myhost.tld/foundation-balance-february
+OK, the file has been deleted.
+```
+
 # Serve 🌎
 
 ## Locally
