@@ -6,6 +6,13 @@ use Slim\Factory\AppFactory;
 require __DIR__ . '/bootstrap.php';
 global $context;
 
+if (PHP_SAPI === 'cli') {
+    $jsonContext = json_encode($context, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    file_put_contents('php://stderr', "CLIup Configuration\n$jsonContext\n");
+
+    exit(0);
+}
+
 $app = AppFactory::create();
 
 if ($context['BASE_URL']) {

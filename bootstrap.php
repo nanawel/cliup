@@ -40,10 +40,3 @@ if (!is_file($context['WORDSLIST_FILE']) || !is_readable($context['WORDSLIST_FIL
 if (!is_dir($context['UPLOAD_DIR']) || !is_writable($context['UPLOAD_DIR'])) {
     throw new \Exception($context['UPLOAD_DIR'] . ' is not writable!');
 }
-
-if (PHP_SAPI === 'cli') {
-    $jsonContext = json_encode($context, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-    file_put_contents('php://stderr', "CLIup Configuration\n$jsonContext\n");
-
-    exit(0);
-}
