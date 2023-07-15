@@ -6,9 +6,9 @@ global $context;
 switch ($argv[1] ?? null) {
     case 'purge':
         $expirationTimeInMinutes = round($context['EXPIRATION_TIME'] / 60);
+        chdir($context['UPLOAD_DIR']);
         $cmd = sprintf(
-            'find %s -path ??/??/* -type f -mmin %d -delete',
-            escapeshellarg($context['UPLOAD_DIR']),
+            'find . -path ??/??/* -type f -mmin %d -delete',
             $expirationTimeInMinutes
         );
 
