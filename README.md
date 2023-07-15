@@ -59,7 +59,7 @@ OK, the file has been deleted.
 ## Locally
 
 ```shell
-# >By default, will listen on localhost:8080
+# By default, will listen on localhost:8080
 make server-start
 ```
 
