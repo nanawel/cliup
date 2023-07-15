@@ -176,7 +176,7 @@ namespace CLiup {
             ->withHeader('CLIup-Upload-Name', $uploadName)
             ->withHeader('CLIup-File-Password', $password)
             ->withHeader('CLIup-File-Path', sprintf('/%s/%s', $password, $uploadName));
-        $response->getBody()->write("OK, the password for your file is: $password\n");
+        $response->getBody()->write("File uploaded successfully. The password for your file is:\n$password\n");
 
         log("New file uploaded successfully.");
 

@@ -11,8 +11,10 @@ RUN cd /srv \
  && mkdir -p uploads \
  && composer install --no-dev --optimize-autoloader
 
-ARG appVersion
-ENV CLIUP_VERSION=${appVersion} \
+ARG build_version
+ARG build_id
+ARG build_date
+ENV CLIUP_VERSION=${build_version}-${build_id} \
     UPLOAD_DIR=/srv/uploads
 
 CMD php -S 0.0.0.0:8080 index.php

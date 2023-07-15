@@ -9,7 +9,8 @@ ini_set('xdebug.default_enable', false);
 ini_set('html_errors', false);
 
 $context = [
-    'APP_VERSION'         => getenv('CLIUP_VERSION') ?: '(dev)',
+    'APP_VERSION'         => getenv('CLIUP_VERSION') ?: 'dev',
+    'BASE_URL'            => getenv('BASE_URL') ?: '',
     'DEBUG'               => getenv('DEBUG') ?: false,
     'EXPIRATION_TIME'     => getenv('EXPIRATION_TIME') ?: 60 * 60 * 24,                 // 1 DAY
     'HASH_SALT'           => getenv('HASH_SALT') ?: '',
@@ -18,9 +19,9 @@ $context = [
     'MAX_UPLOAD_SIZE'     => getenv('MAX_UPLOAD_SIZE') ?: 1 * 1024 * 1024,              // 1 MB
     'MEMORY_LIMIT'        => getenv('MEMORY_LIMIT') ?: null,
     'TMP_DIR'             => getenv('TMP_DIR') ?: '/tmp',
-    'TRACE_CLIENT_INFO'   => getenv('TRACE_CLIENT_INFO') !== '' ? (bool) getenv('TRACE_CLIENT_INFO') : true,
+    'TRACE_CLIENT_INFO'   => ((string) getenv('TRACE_CLIENT_INFO')) !== '' ? (bool) getenv('TRACE_CLIENT_INFO') : true,
     'UPLOAD_DIR'          => getenv('UPLOAD_DIR') ?: '/tmp',
-    'UPLOAD_DIR_PERMS'    => getenv('UPLOAD_DIR_PERMS') ?: 0700,
+    'UPLOAD_DIR_PERMS'    => octdec(getenv('UPLOAD_DIR_PERMS') ?: '0700'),
     'UPLOAD_NAME_MAX_LEN' => getenv('UPLOAD_NAME_MAX_LEN') ?: 255,
     'WORDSLIST_FILE'      => getenv('WORDSLIST_FILE') ?: __DIR__ . '/wordslist.txt',
 ];
@@ -41,7 +42,7 @@ if (!is_dir($context['UPLOAD_DIR']) || !is_writable($context['UPLOAD_DIR'])) {
 }
 
 if (PHP_SAPI === 'cli') {
-    $jsonContext = json_encode($context, JSON_PRETTY_PRINT);
+    $jsonContext = json_encode($context, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     file_put_contents('php://stderr', "CLIup Configuration\n$jsonContext\n");
 
     exit(0);

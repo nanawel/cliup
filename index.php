@@ -4,8 +4,13 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Factory\AppFactory;
 
 require __DIR__ . '/bootstrap.php';
+global $context;
 
 $app = AppFactory::create();
+
+if ($context['BASE_URL']) {
+    $app->setBasePath($context['BASE_URL']);
+}
 
 $app->get('/', function (Request $request, Response $response, $args) use ($context) {
     $maxFilesizeHuman = byteConvert($context['MAX_UPLOAD_SIZE']);
@@ -26,7 +31,7 @@ $app->get('/', function (Request $request, Response $response, $args) use ($cont
 / /__/ /___/ // // / _ \
 \___/____/___/\_,_/ .__/
                  /_/ 
-CLIup v{$context['APP_VERSION']}
+CLIup version {$context['APP_VERSION']}
 Please use a PUT or a POST request to send a file.
 
 Maximum file size    : $maxFilesizeHuman ({$context['MAX_UPLOAD_SIZE']} bytes)
@@ -72,6 +77,7 @@ $app->get('/{password}[/{upload_name}]', function (Request $request, Response $r
         }
     }
     catch (\Throwable $e) {
+        \CLiup\log("No file found with password {$args['password']}: {$e->getMessage()}.", 'ERROR');
         $response->getBody()->write("ERROR: No file found with that password, or it has expired.\n");
         return $response->withStatus(404, 'No file found with that password, or it has expired');
     }
@@ -91,6 +97,8 @@ $app->get('/{password}[/{upload_name}]', function (Request $request, Response $r
         ->withHeader('Pragma', 'no-cache')
         ->withHeader('CLIup-Upload-Expiration', (date('c', $filemtime + $context['EXPIRATION_TIME'])))
         ->withBody((new \Slim\Psr7\Stream(fopen($filePath, 'rb'))));
+
+    \CLiup\log("Sending file $uploadHash with password {$args['password']} ($uploadName).");
 
     return $response;
 });
@@ -116,6 +124,7 @@ $app->delete('/{password}', function (Request $request, Response $response, $arg
         }
     }
     catch (\Throwable $e) {
+        \CLiup\log("No file found with password {$args['password']}: {$e->getMessage()}.", 'ERROR');
         $response->getBody()->write("ERROR: No file found with that password, or it has expired.\n");
         return $response->withStatus(404, 'No file found with that password, or it has expired');
     }
@@ -128,8 +137,10 @@ $app->delete('/{password}', function (Request $request, Response $response, $arg
     }
 
     if ($success) {
+        \CLiup\log("File $uploadHash with password {$args['password']} has been deleted.");
         $response->getBody()->write("OK, the file has been deleted.\n");
     } else {
+        \CLiup\log("File $uploadHash with password {$args['password']} could not be deleted.", 'ERROR');
         $response->getBody()->write("ERROR: Sorry, unable to delete the file.\n");
         return $response->withStatus(500, 'Sorry, unable to delete the file');
     }
