@@ -1,7 +1,7 @@
 CLIup
 =====
 
-Simple and efficient CLI-oriented file sharing service.
+Simple and efficient self-hosted, CLI-oriented file sharing service over HTTP.
 
 
 ![Demo](doc/demo.gif)
