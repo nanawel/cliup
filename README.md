@@ -86,6 +86,37 @@ mkdir ./uploads
 docker run -d -p 80:8080 -v ./uploads:/srv/uploads -u 1000:1000 nanawel/cliup
 ```
 
+## Reverse-proxy configuration
+
+Of course you should use SSL/TLS with this service. But it's not embedded in the Docker itself
+nor in the server code. So you should configure properly a reverse-proxy with the solution
+of your choice.
+
+### Nginx
+
+You must set an appropriate `client_max_body_size` value depending on the `MAX_UPLOAD_SIZE` you
+set for the service (see §Configuration below).
+
+Example in your vhost (here for 100 MB max):
+
+```
+client_max_body_size 100M;
+```
+
+### Apache
+
+With Apache, you have 2 configurations value to check: `LimitRequestBody` **but also** `Proxy100Continue`
+that must be **disabled** (Off).
+
+So for a hard limit to 100 MB, this should be:
+
+```apacheconf
+LimitRequestBody 104857600
+Proxy100Continue Off
+```
+
+> See more: https://httpd.apache.org/docs/2.4/fr/mod/mod_proxy.html#proxy100continue
+
 ## Purge ♻
 
 Files are not automatically removed as there is no cronjob inside the Docker container.

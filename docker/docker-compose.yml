@@ -1,0 +1,18 @@
+version: '3.2'
+
+services:
+  app:
+    image: nanawel/cliup
+    restart: unless-stopped
+    user: 65534:65534   # nobody/nogroup
+    ports:
+      - '8080:8080'
+    volumes:
+      # Make sure you create the folder with the proper UID/GID first
+      - ./uploads:/srv/uploads
+    environment:
+      MEMORY_LIMIT: 256M
+      # 2 days
+      EXPIRATION_TIME: 172800
+      # 200 MB
+      MAX_UPLOAD_SIZE: 209715200
