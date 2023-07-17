@@ -19,6 +19,19 @@ if ($context['BASE_URL']) {
     $app->setBasePath($context['BASE_URL']);
 }
 
+
+$app->map(['HEAD'], '/', function (Request $request, Response $response, $args) use ($context) {
+    $response = $response
+        ->withHeader('CLIup-Version', $context['APP_VERSION'])
+        ->withHeader('CLIup-Expiration-Time', $context['EXPIRATION_TIME'])
+        ->withHeader('CLIup-Max-Upload-Size', $context['MAX_UPLOAD_SIZE'])
+        ->withHeader('CLIup-Pass-Words-Count', $context['PASS_WORDS_COUNT'])
+        ->withHeader('Content-Type', 'text/plain')
+    ;
+
+    return $response;
+});
+
 $app->get('/', function (Request $request, Response $response, $args) use ($context) {
     $maxFilesizeHuman = byteConvert($context['MAX_UPLOAD_SIZE']);
     $expirationTimeHuman = human_date_interval(
