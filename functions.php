@@ -50,10 +50,11 @@ namespace {
      */
     function byteConvert($bytes)
     {
-        if ($bytes == 0)
+        if (!$bytes) {
             return '0.00 B';
+        }
 
-        $s = array('B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB');
+        $s = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB'];
         $e = floor(log($bytes, 1024));
 
         return round($bytes / (1024 ** $e), 2) . ' ' . $s[$e];
@@ -63,8 +64,12 @@ namespace {
 
 namespace CLiup {
 
+    use Defuse\Crypto\File;
+    use Defuse\Crypto\Key;
+    use Psr\Http\Message\StreamInterface;
     use Slim\Psr7\Request;
     use Slim\Psr7\Response;
+    use Slim\Psr7\Stream;
 
     function log($message, $level = 'INFO') {
         file_put_contents('php://stderr', date('c') . " $level $message\n");
@@ -93,6 +98,11 @@ namespace CLiup {
         return sha1($context['HASH_SALT'] . $password);
     }
 
+    function getEncryptionKey(string $password) {
+        global $context;
+        return sha1($context['HASH_SALT'] . strrev($password));
+    }
+
     function getUploadDir(string $uploadHash) {
         global $context;
         return $context['UPLOAD_DIR']
@@ -104,16 +114,23 @@ namespace CLiup {
         return getUploadDir($uploadHash) . "/$uploadHash";
     }
 
-    function getUploadMetdataFilePath(string $uploadHash) {
+    function getUploadMetadataFilePath(string $uploadHash) {
         return getUploadDir($uploadHash) . "/$uploadHash.json";
     }
 
+    function getUploadMetadata(string $uploadHash) {
+        if (is_file($path = getUploadMetadataFilePath($uploadHash))) {
+            return json_decode(file_get_contents($path), true) ?: [];
+        }
+        return [];
+    }
+
     /**
-     * @param \Psr\Http\Message\UploadedFileInterface $file
+     * @param \Slim\Psr7\UploadedFile $file
      * @param string $uploadName
      * @param string $password
      */
-    function moveUploadedFile(\Psr\Http\Message\UploadedFileInterface $file, $uploadName, $password) {
+    function moveUploadedFile(\Slim\Psr7\UploadedFile $file, string $uploadName, string $password) {
         global $context;
         $uploadHash = getUploadHash($password);
         $uploadDir = getUploadDir($uploadHash);
@@ -121,20 +138,22 @@ namespace CLiup {
             log("Cannot create directory $uploadDir.", 'ERROR');
             throw new \Exception('Cannot create directory ' . $uploadDir);
         }
-        $file->moveTo(getUploadFilePath($uploadHash));
 
         $metadata = [
             'upload_name' => $uploadName,
             'created_at' => date('c'),
             'size' => $file->getSize()
         ];
+
+        encryptAndMoveFile($file, getUploadFilePath($uploadHash), $password, $metadata);
+
         if ($context['TRACE_CLIENT_INFO']) {
             $metadata['remote_ip'] = $_SERVER['HTTP_X_REAL_IP']
                 ?? $_SERVER['HTTP_X_FORWARDED_FOR']
                 ?? $_SERVER['REMOTE_ADDR'];
             $metadata['user_agent'] = $_SERVER['HTTP_USER_AGENT'];
         }
-        if (!file_put_contents(getUploadMetdataFilePath($uploadHash), json_encode($metadata))) {
+        if (!file_put_contents(getUploadMetadataFilePath($uploadHash), json_encode($metadata))) {
             log("Could not write metadata file for $uploadHash.", 'ERROR');
         }
         if ($context['LOG_ACTIVITY']) {
@@ -142,16 +161,36 @@ namespace CLiup {
         }
     }
 
+    function encryptAndMoveFile(
+        \Slim\Psr7\UploadedFile $file,
+        string $targetPath,
+        string $password,
+        array &$metadata
+    ) {
+        global $context;
+
+        if ($context['ENCRYPTION_ENABLED']) {
+            File::encryptFileWithPassword($file->getFilePath(), $targetPath, getEncryptionKey($password));
+            $metadata['encryption_enabled'] = true;
+            log("File encrypted successfully.");
+        } else {
+            $file->moveTo($targetPath);
+            $metadata['encryption_enabled'] = false;
+            log("File moved successfully without encryption.");
+        }
+    }
+
     /**
      * @param string $uploadName
-     * @param \Psr\Http\Message\UploadedFileInterface[] $files
+     * @param \Slim\Psr7\UploadedFile[] $files
      * @param Request $request
      * @param Response $response
      * @return Response
      * @throws \Exception
      */
     function processUploadedFiles($uploadName, array $files, Request $request, Response $response) {
-        global $context;
+        global $context,
+            $MEMORY_USAGE_START;
 
         if (empty($files)) {
             log("Upload error, no file has been provided.", 'ERROR');
@@ -181,8 +220,40 @@ namespace CLiup {
             ->withHeader('CLIup-File-Path', sprintf('/%s/%s', $password, $uploadName));
         $response->getBody()->write("File uploaded successfully. The password for your file is:\n$password\n");
 
-        log("New file uploaded successfully.");
+        log(sprintf(
+            "New file uploaded successfully. Memory used: %s",
+            byteConvert(memory_get_usage() - $MEMORY_USAGE_START)
+        ));
 
         return $response;
+    }
+
+    /**
+     * @param string $password
+     * @return resource
+     */
+    function getUploadFileStream(string $password) {
+        global $context;
+
+        $uploadHash = getUploadHash($password);
+        $filePath = getUploadFilePath($uploadHash);
+        $metadata = getUploadMetadata($uploadHash);
+
+        if (!($metadata['encryption_enabled'] ?? false)) {
+            return fopen($filePath, 'rb');
+        }
+
+        // Not really ideal, a better solution would stream the decrypted file content directly into the response body
+        $tmpFilePath = tempnam($context['TMP_DIR'], 'CLIup_');
+
+        $sourceFileHandler = fopen($filePath, 'rb');
+        $tmpFileHandler = fopen($tmpFilePath, 'wb');
+        File::decryptResourceWithPassword($sourceFileHandler, $tmpFileHandler, getEncryptionKey($password));
+        fclose($sourceFileHandler);
+        fclose($tmpFileHandler);
+
+        log("Decrypted file $uploadHash to temp file $tmpFilePath.");
+
+        return fopen($tmpFilePath, 'rb');
     }
 }

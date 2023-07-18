@@ -1,4 +1,6 @@
 .idea/
+tests/*.file
+tests/*.*.hurl
 vendor/
 words-csv/
 *.xlsx

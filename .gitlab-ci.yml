@@ -6,6 +6,7 @@ variables:
 
 stages:
   - build
+  - test
   - release
 
 before_script:
@@ -21,6 +22,15 @@ build_image:
       && time make build args="--build-arg build_version=${buildVersion} --build-arg build_id=${CI_COMMIT_SHORT_SHA} --build-arg build_date=$(date -Is)"
     - time docker tag ${CONTAINER_BUILD_IMAGE}:${APP_VERSION:-latest} ${CONTAINER_RELEASE_IMAGE}:${CI_COMMIT_SHORT_SHA}
     - time docker push ${CONTAINER_RELEASE_IMAGE}:${CI_COMMIT_SHORT_SHA}
+  tags:
+    - shell
+    - docker
+
+hurl_test:
+  stage: test
+  script:
+    - time make docker-test ENCRYPTION_ENABLED=0
+    - time make docker-test ENCRYPTION_ENABLED=1
   tags:
     - shell
     - docker

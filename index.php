@@ -77,11 +77,12 @@ EOT);
 });
 
 $app->get('/{password}[/{upload_name}]', function (Request $request, Response $response, $args) {
-    global $context;
+    global $context,
+           $MEMORY_USAGE_START;
 
     $uploadHash = \CLiup\getUploadHash($args['password']);
     $filePath = \CLiup\getUploadFilePath($uploadHash);
-    $metadataFilePath = \CLiup\getUploadMetdataFilePath($uploadHash);
+    $metadataFilePath = \CLiup\getUploadMetadataFilePath($uploadHash);
 
     try {
         if (!is_file($filePath)) {
@@ -95,30 +96,35 @@ $app->get('/{password}[/{upload_name}]', function (Request $request, Response $r
 
             throw new \Exception('Expired');
         }
-    }
+
+        $metadata = \CLiup\getUploadMetadata($uploadHash);
+        $uploadName = basename($args['upload_name'] ?? $metadata['upload_name'] ?? 'file');
+
+        $response = $response
+            ->withHeader('Content-Type', mime_content_type($filePath) ?: 'application/octet-stream')
+            ->withHeader('Content-Disposition', 'attachment; filename=' . $uploadName)
+            ->withAddedHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->withHeader('Cache-Control', 'post-check=0, pre-check=0')
+            ->withHeader('Pragma', 'no-cache')
+            ->withHeader('CLIup-Upload-Expiration', (date('c', $filemtime + $context['EXPIRATION_TIME'])))
+            ->withBody((new \Slim\Psr7\Stream(\CLiup\getUploadFileStream($args['password']))));
+        }
     catch (\Throwable $e) {
-        \CLiup\log("No file found with password {$args['password']}: {$e->getMessage()}.", 'ERROR');
+        \CLiup\log(
+            "Got exception while trying to access the file $uploadHash with password {$args['password']}:\n$e.",
+            'ERROR'
+        );
         $response->getBody()->write("ERROR: No file found with that password, or it has expired.\n");
         return $response->withStatus(404, 'No file found with that password, or it has expired');
     }
 
-    if (is_file($metadataFilePath)) {
-        $metadata = json_decode(file_get_contents($metadataFilePath), true) ?: [];
-    } else {
-        $metadata = [];
-    }
-    $uploadName = basename($args['upload_name'] ?? $metadata['upload_name'] ?? 'file');
-
-    $response = $response
-        ->withHeader('Content-Type', mime_content_type($filePath) ?: 'application/octet-stream')
-        ->withHeader('Content-Disposition', 'attachment; filename=' . $uploadName)
-        ->withAddedHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
-        ->withHeader('Cache-Control', 'post-check=0, pre-check=0')
-        ->withHeader('Pragma', 'no-cache')
-        ->withHeader('CLIup-Upload-Expiration', (date('c', $filemtime + $context['EXPIRATION_TIME'])))
-        ->withBody((new \Slim\Psr7\Stream(fopen($filePath, 'rb'))));
-
-    \CLiup\log("Sending file $uploadHash with password {$args['password']} ($uploadName).");
+    \CLiup\log(sprintf(
+        "Sending file %s with password %s (%s). Memory used: %s",
+        $uploadHash,
+        $args['password'],
+        $uploadName,
+        byteConvert(memory_get_usage() - $MEMORY_USAGE_START)
+    ));
 
     return $response;
 });
@@ -128,7 +134,7 @@ $app->delete('/{password}', function (Request $request, Response $response, $arg
 
     $uploadHash = \CLiup\getUploadHash($args['password']);
     $filePath = \CLiup\getUploadFilePath($uploadHash);
-    $metadataFilePath = \CLiup\getUploadMetdataFilePath($uploadHash);
+    $metadataFilePath = \CLiup\getUploadMetadataFilePath($uploadHash);
 
     try {
         if (!is_file($filePath)) {
@@ -142,19 +148,23 @@ $app->delete('/{password}', function (Request $request, Response $response, $arg
 
             throw new \Exception('Expired');
         }
+
+        if (is_file($filePath)) {
+            $success = @unlink($filePath);
+            if (is_file($metadataFilePath)) {
+                $success &= @unlink($metadataFilePath);
+            }
+        }
     }
     catch (\Throwable $e) {
-        \CLiup\log("No file found with password {$args['password']}: {$e->getMessage()}.", 'ERROR');
+        \CLiup\log(
+            "Got exception while trying to delete the file $uploadHash with password {$args['password']}:\n$e.",
+            'ERROR'
+        );
         $response->getBody()->write("ERROR: No file found with that password, or it has expired.\n");
         return $response->withStatus(404, 'No file found with that password, or it has expired');
     }
 
-    if (is_file($filePath)) {
-        $success = @unlink($filePath);
-        if (is_file($metadataFilePath)) {
-            $success &= @unlink($metadataFilePath);
-        }
-    }
 
     if ($success) {
         \CLiup\log("File $uploadHash with password {$args['password']} has been deleted.");
@@ -176,12 +186,12 @@ $app->post('/', $rootHandler);
 $app->put('/', $rootHandler);
 
 $app->post('/{uploadname}', function (Request $request, Response $response, $args) {
-    /** @var \Psr\Http\Message\UploadedFileInterface[] $files */
+    /** @var \Slim\Psr7\UploadedFile[] $files */
     $files = $request->getUploadedFiles();
 
     $fileObjects = [];
     array_walk_recursive($files, function ($it) use (&$fileObjects) {
-        if ($it instanceof \Psr\Http\Message\UploadedFileInterface) {
+        if ($it instanceof \Slim\Psr7\UploadedFile) {
             $fileObjects[] = $it;
         }
     });
@@ -194,11 +204,13 @@ $app->post('/{uploadname}', function (Request $request, Response $response, $arg
 $app->put('/{uploadname}', function (Request $request, Response $response, $args) {
     global $context;
     $fileContent = $request->getBody()->getContents();
-    if (strlen($fileContent) > $context['MAX_UPLOAD_SIZE']) {
+    if (($filesize = strlen($fileContent)) > $context['MAX_UPLOAD_SIZE']) {
+        \CLiup\log("File is too big: $filesize bytes (limit = {$context['MAX_UPLOAD_SIZE']} bytes).", 'ERROR');
         $response->getBody()->write("ERROR: File is too big!\n");
         return $response->withStatus(400, 'File is too big!');
     }
     if (!file_put_contents($file = $context['TMP_DIR'] . '/' . uniqid('CLIUP_tmp_'), $fileContent)) {
+        \CLiup\log("Could not write file data to $file (filesize = $filesize).", 'ERROR');
         $response->getBody()->write("ERROR: Upload has failed.\n");
         return $response->withStatus(400, 'Upload has failed');
     }

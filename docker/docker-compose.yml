@@ -4,11 +4,10 @@ services:
   app:
     image: nanawel/cliup
     restart: unless-stopped
-    user: 65534:65534   # nobody/nogroup
     ports:
       - '8080:8080'
     volumes:
-      # Make sure you create the folder with the proper UID/GID first
+      # Make sure you create the folder with the write permissions for 1000:1000
       - ./uploads:/srv/uploads
     environment:
       MEMORY_LIMIT: 256M

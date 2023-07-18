@@ -1,5 +1,6 @@
 {
     "name": "nanawel/cliup",
+    "description": "Simple and efficient CLI-oriented file sharing service over HTTP.",
     "authors": [
         {
             "name": "Anaël Ollier",
@@ -9,8 +10,9 @@
     ],
     "license": "MIT",
     "require": {
-        "slim/slim": "4.*",
-        "slim/psr7": "^1.6"
+        "defuse/php-encryption": "^2.4",
+        "slim/psr7": "^1.6",
+        "slim/slim": "4.*"
     },
     "require-dev": {
         "roave/security-advisories": "dev-latest"
@@ -18,7 +20,6 @@
     "autoload": {
         "files": [
             "./functions.php"
-
         ]
     }
 }

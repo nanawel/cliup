@@ -1,0 +1,28 @@
+version: '3.2'
+
+services:
+  app:
+    build:
+      context: '../'
+    restart: unless-stopped
+    environment:
+      MEMORY_LIMIT: 128M
+      # 2 days
+      EXPIRATION_TIME: 172800
+      # 20 MB
+      MAX_UPLOAD_SIZE: 20971520
+      ENCRYPTION_ENABLED: ${ENCRYPTION_ENABLED:-0}
+    networks:
+      default:
+        aliases:
+          - cliup-test.local
+
+  test-runner:
+    build:
+      context: './'
+    restart: unless-stopped
+    user: 65534:65534   # nobody/nogroup
+    volumes:
+      - ./:/tests
+    depends_on:
+      - app

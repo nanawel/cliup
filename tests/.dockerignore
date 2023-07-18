@@ -1,0 +1,3 @@
+*.file
+expect-*.*.hurl
+!expect-*.tmpl.hurl

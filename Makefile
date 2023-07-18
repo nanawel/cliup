@@ -41,3 +41,16 @@ config:
 .PHONY: build
 build:
 	docker-compose build $(args)
+
+.PHONY: test
+docker-test:
+	docker-compose -f tests/docker-compose.yml run \
+		$$([ "$(rebuild)" != "1" ] || echo "--build") \
+		--rm \
+		-e ENCRYPTION_ENABLED=$(ENCRYPTION_ENABLED) \
+		test-runner \
+		make test $(args)
+
+.PHONY: test
+test:
+	cd tests && make test args=$(args)
