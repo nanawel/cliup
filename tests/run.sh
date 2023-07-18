@@ -27,4 +27,4 @@ done
 
 cd $RUN_DIR
 
-hurl --fail-at-end --test $(args) testsuite.hurl;
+hurl --fail-at-end --test ${args} testsuite.hurl;
