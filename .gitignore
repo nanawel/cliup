@@ -1,6 +1,7 @@
 .idea/
 tests/*.file
 tests/*.*.hurl
+!tests/*.tmpl.hurl
 vendor/
 words-csv/
 *.xlsx
