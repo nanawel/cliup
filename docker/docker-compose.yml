@@ -8,7 +8,7 @@ services:
       - '8080:8080'
     volumes:
       # Make sure you create the folder with the write permissions for 1000:1000
-      - ./uploads:/srv/uploads
+      - ./uploads:/uploads
     environment:
       MEMORY_LIMIT: 256M
       # 2 days

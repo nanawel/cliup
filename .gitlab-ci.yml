@@ -29,8 +29,8 @@ build_image:
 hurl_test:
   stage: test
   script:
-    - time make docker-test ENCRYPTION_ENABLED=0
-    - time make docker-test ENCRYPTION_ENABLED=1
+    - time make test-docker ENCRYPTION_ENABLED=0
+    - time make test-docker ENCRYPTION_ENABLED=1
   tags:
     - shell
     - docker

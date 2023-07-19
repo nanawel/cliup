@@ -243,17 +243,14 @@ namespace CLiup {
             return fopen($filePath, 'rb');
         }
 
-        // Not really ideal, a better solution would stream the decrypted file content directly into the response body
-        $tmpFilePath = tempnam($context['TMP_DIR'], 'CLIup_');
-
         $sourceFileHandler = fopen($filePath, 'rb');
-        $tmpFileHandler = fopen($tmpFilePath, 'wb');
-        File::decryptResourceWithPassword($sourceFileHandler, $tmpFileHandler, getEncryptionKey($password));
+        $memHandler = fopen('php://memory', 'wb');
+        File::decryptResourceWithPassword($sourceFileHandler, $memHandler, getEncryptionKey($password));
         fclose($sourceFileHandler);
-        fclose($tmpFileHandler);
 
-        log("Decrypted file $uploadHash to temp file $tmpFilePath.");
+        log("Decrypted file $uploadHash to memory.");
 
-        return fopen($tmpFilePath, 'rb');
+        rewind($memHandler);
+        return $memHandler;
     }
 }

@@ -42,8 +42,8 @@ config:
 build:
 	docker-compose build $(args)
 
-.PHONY: test
-docker-test:
+.PHONY: test-docker
+test-docker:
 	docker-compose -f tests/docker-compose.yml run \
 		$$([ "$(rebuild)" != "1" ] || echo "--build") \
 		--rm \
@@ -51,6 +51,10 @@ docker-test:
 		test-runner \
 		make test $(args)
 
+.PHONY: test-local
+test-local:
+	cd tests && make test args='--connect-to cliup-test.local:8080:$(LISTEN_HOST):$(LISTEN_PORT) $(args)'
+
 .PHONY: test
 test:
-	cd tests && make test args=$(args)
+	cd tests && make test args="$(args)"

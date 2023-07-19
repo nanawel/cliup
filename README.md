@@ -83,7 +83,7 @@ With proper upload folder and UID/GID:
 
 ```shell
 mkdir ./uploads
-docker run -d -p 80:8080 -v ./uploads:/srv/uploads -u 1000:1000 nanawel/cliup
+docker run -d -p 80:8080 -v ./uploads:/uploads -u 1000:1000 nanawel/cliup
 ```
 
 ## Reverse-proxy configuration
@@ -141,7 +141,7 @@ You can use the following environment variables to configure the service:
     MAX_UPLOAD_SIZE       (default: 1048576    => 1 MB)
     TMP_DIR               (default: "/tmp")
     TRACE_CLIENT_INFO     (default: 1)
-    UPLOAD_DIR            (default: "/tmp" or "/srv/uploads" on Docker)
+    UPLOAD_DIR            (default: "/tmp" or "/uploads" on Docker)
     UPLOAD_DIR_PERMS      (default: "0700")
     UPLOAD_NAME_MAX_LEN   (default: 255)
     WORDSLIST_FILE        (default: "./wordslist.txt")
