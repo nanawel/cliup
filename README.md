@@ -69,7 +69,7 @@ foundation-balance-february
 
 ```shell
 # Use the password you got previously
-$ curl myhost.tld/institute-crisis-individual > myfile.bin
+$ curl http://myhost.tld/institute-crisis-individual > myfile.bin
 ```
 
 ## Delete
