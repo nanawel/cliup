@@ -2,6 +2,8 @@
 tests/*.file
 tests/*.*.hurl
 !tests/*.tmpl.hurl
+!tests/get.expect-success.hurl
+!tests/head.expect-success.hurl
 tests/docker-compose.override.yml
 vendor/
 words-csv/

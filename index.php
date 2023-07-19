@@ -22,6 +22,7 @@ if ($context['BASE_URL']) {
 
 $app->map(['HEAD'], '/', function (Request $request, Response $response, $args) use ($context) {
     $response = $response
+        ->withStatus(\Fig\Http\Message\StatusCodeInterface::STATUS_NO_CONTENT)
         ->withHeader('CLIup-Version', $context['APP_VERSION'])
         ->withHeader('CLIup-Expiration-Time', $context['EXPIRATION_TIME'])
         ->withHeader('CLIup-Max-Upload-Size', $context['MAX_UPLOAD_SIZE'])
@@ -107,9 +108,9 @@ $app->get('/{password}[/{upload_name}]', function (Request $request, Response $r
             ->withHeader('Cache-Control', 'post-check=0, pre-check=0')
             ->withHeader('Pragma', 'no-cache')
             ->withHeader('CLIup-Upload-Expiration', (date('c', $filemtime + $context['EXPIRATION_TIME'])))
-            ->withBody((new \Slim\Psr7\Stream(\CLiup\getUploadFileStream($args['password']))));
-        }
-    catch (\Throwable $e) {
+            ->withBody((new \Slim\Psr7\Stream(\CLiup\getUploadFileStream($args['password']))))
+        ;
+    } catch (\Throwable $e) {
         \CLiup\log(
             "Got exception while trying to access the file $uploadHash with password {$args['password']}:\n$e.",
             'ERROR'
