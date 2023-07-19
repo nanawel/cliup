@@ -12,7 +12,7 @@ stages:
 before_script:
   - time docker info
   - '[ -z "${REGISTRY_SERVER}" ] || time docker login ${REGISTRY_SERVER}'
-  - env
+  - env | sort
 
 build_image:
   stage: build

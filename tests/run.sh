@@ -18,7 +18,7 @@ for s in 1 2 5 10 21 40; do
 done
 
 rm -f ${RUN_DIR}/testsuite.hurl
-for s in 1 2 5 10; do
+for s in 1 5 10 20; do
     sed "s/__testfile__/${s}MB.file/g" expect-success.tmpl.hurl >> ${RUN_DIR}/testsuite.hurl;
 done
 for s in 21 40; do

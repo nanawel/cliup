@@ -5,8 +5,6 @@ services:
     build:
       context: '../'
     restart: unless-stopped
-    volumes:
-      - ../:/srv
     environment:
       MEMORY_LIMIT: 128M
       # 2 days
