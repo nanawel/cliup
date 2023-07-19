@@ -6,6 +6,7 @@ Simple and efficient self-hosted, CLI-oriented file sharing service over HTTP.
 
 ![Demo](doc/demo.gif)
 
+
 # Why CLIup? 🤔
 
 I needed a file sharing service that could be easily used with only `curl` and `wget` for maximum
@@ -24,12 +25,13 @@ with... you guessed it, another `curl` or `wget`.
 👎 What you **don't** get with CLIup:
 
 * An end-to-end encrypted file sharing service
-* Encrypted files on server
+* Bulletproof encryption of the files on the server
 * A scalable service able to serve thousands of requests
+
 
 # Nice! Is there a demo? 👀
 
-Well, no. For obvious reasons, running an anonymous public file-sharing service is not a good idea
+Well, no. For obvious reasons, running a public anonymous file-sharing service is not a good idea
 these days.
 
 So if you want to test it, install it on your own server! 👷‍♀️
@@ -37,30 +39,48 @@ So if you want to test it, install it on your own server! 👷‍♀️
 
 # Use 🚀
 
+## Send
+
 ```shell
-# Easiest, using curl + PUT
-curl -T myfile.bin myhost.tld
+# Easiest & shortest, using curl + PUT
+$ curl -T myfile.bin http://myhost.tld
 File uploaded successfully. The password for your file is:
 institute-crisis-individual
 
-# On some other computer
-curl myhost.tld/institute-crisis-individual > myfile.bin
+# [Alternative] If you prefer wget or you don't have curl
+# You need to set the name of your file in the path after the host
+$ wget --method PUT --body-file=myfile.bin http://myhost.tld/myfile.bin -O - -nv
 ```
+
+> [Explain me](https://explainshell.com/explain?cmd=wget+--method+PUT+--body-file%3D5MB.file+http%3A%2F%2Flocalhost%3A8080%2Fmyfile.bin+-O+-+-nv)
 
 You may also use POST like so:
 
 ```shell
 # You need to set the name of your file in the path after the host
-curl -F "data=@myfile.bin" myhost.tld/myfile.bin
+$ curl -F "data=@myfile.bin" http://myhost.tld/myfile.bin
 File uploaded successfully. The password for your file is:
 foundation-balance-february
 ```
 
-To delete a file, you only need its password too:
+☝ _There is no `wget` alternative with POST as of today._
+
+## Retrieve
+
 ```shell
-curl -X DELETE myhost.tld/foundation-balance-february
+# Use the password you got previously
+$ curl myhost.tld/institute-crisis-individual > myfile.bin
+```
+
+## Delete
+
+To delete a file, you only need its password too:
+
+```shell
+$ curl -X DELETE http://myhost.tld/foundation-balance-february
 OK, the file has been deleted.
 ```
+
 
 # Serve 🌎
 
@@ -68,7 +88,7 @@ OK, the file has been deleted.
 
 ```shell
 # By default, will listen on localhost:8080
-make server-start
+$ make server-start
 ```
 
 ## Docker 🐳 
@@ -76,15 +96,18 @@ make server-start
 Quick & dirty:
 
 ```shell
-docker run -d -p 80:8080 nanawel/cliup
+$ docker run -d -p 80:8080 nanawel/cliup
 ```
 
 With proper upload folder and UID/GID:
 
 ```shell
-mkdir ./uploads
-docker run -d -p 80:8080 -v ./uploads:/uploads -u 1000:1000 nanawel/cliup
+$ mkdir -m 700 ./uploads
+$ chown 1000:1000 ./uploads
+$ docker run -d -p 80:8080 -v ./uploads:/uploads -u 1000:1000 nanawel/cliup
 ```
+
+You might want to use the provided [`docker-compose.yml`](./docker/docker-compose.yml) instead as a base.
 
 ## Reverse-proxy configuration
 
@@ -124,7 +147,7 @@ You should add such a job yourself on the host if you want expired files to be _
 deleted and thus space reclaimed:
 
 ```shell
-docker exec <your-container> php admin.php purge
+$ docker exec <your-container> php admin.php purge
 ```
 
 ## Configuration
@@ -134,6 +157,7 @@ You can use the following environment variables to configure the service:
 ```
     BASE_URL              (default: <empty>)
     DEBUG                 (default: 0)
+    ENCRYPTION_ENABLED    (default: 0)
     EXPIRATION_TIME       (default: 86400      => 1 day)
     HASH_SALT             (default: <empty>)
     PASS_WORDS_COUNT      (default: 3)
