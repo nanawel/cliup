@@ -13,7 +13,7 @@ trap _cleanup SIGINT EXIT
 mkdir -p $RUN_DIR
 cd $TESTS_DIR
 
-for s in 1 2 5 10 21 40; do
+for s in 1 2 5 10 20 21 40; do
     test -f "${RUN_DIR}/${s}MB.file" || dd if=/dev/random of="${RUN_DIR}/${s}MB.file" bs=1M count=$s;
 done
 
