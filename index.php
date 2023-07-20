@@ -56,9 +56,9 @@ $app->get('/', function (Request $request, Response $response, $args) use ($cont
   _______   ____        
  / ___/ /  /  _/_ _____ 
 / /__/ /___/ // // / _ \
-\___/____/___/\_,_/ .__/
+\___/____/___/\_,_/ .__/    <https://github.com/nanawel/cliup>
                  /_/ 
-CLIup version {$context['APP_VERSION']}
+CLIup version {$context['APP_VERSION']} (built: {$context['APP_BUILD_DATE']})
 Please use a PUT or a POST request to send a file.
 
 Maximum file size    : $maxFilesizeHuman ({$context['MAX_UPLOAD_SIZE']} bytes)

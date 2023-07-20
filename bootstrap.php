@@ -12,6 +12,7 @@ ini_set('xdebug.default_enable', false);
 ini_set('html_errors', false);
 
 $context = [
+    'APP_BUILD_DATE'      => getenv('CLIUP_BUILD_DATE') ?: getenv('APP_BUILD_DATE') ?: 'unknown',
     'APP_VERSION'         => getenv('CLIUP_VERSION') ?: getenv('APP_VERSION') ?: 'dev',
     'BASE_URL'            => getenv('BASE_URL') ?: '',
     'DEBUG'               => getenv('DEBUG') ?: false,

@@ -20,6 +20,7 @@ RUN cd /srv \
 USER ${uid}:${gid}
 
 ENV CLIUP_VERSION=${build_version}-${build_id} \
+    CLIUP_BUILD_DATE=${build_date} \
     UPLOAD_DIR=${uploads_dir} \
     MEMORY_LIMIT=256M
 
