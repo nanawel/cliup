@@ -52,7 +52,7 @@ institute-crisis-individual
 $ wget --method PUT --body-file=myfile.bin http://myhost.tld/myfile.bin -O - -nv
 ```
 
-> [Explain me](https://explainshell.com/explain?cmd=wget+--method+PUT+--body-file%3D5MB.file+http%3A%2F%2Flocalhost%3A8080%2Fmyfile.bin+-O+-+-nv)
+> [Explain me the `wget` example](https://explainshell.com/explain?cmd=wget+--method+PUT+--body-file%3D5MB.file+http%3A%2F%2Flocalhost%3A8080%2Fmyfile.bin+-O+-+-nv)
 
 You may also use POST like so:
 
@@ -70,6 +70,9 @@ foundation-balance-february
 ```shell
 # Use the password you got previously
 $ curl http://myhost.tld/institute-crisis-individual > myfile.bin
+
+# Or with wget
+$ wget http://myhost.tld/institute-crisis-individual -O myfile.bin -q
 ```
 
 ## Delete
