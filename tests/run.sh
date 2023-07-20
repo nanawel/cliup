@@ -27,7 +27,7 @@ cat get.expect-success.hurl > ${RUN_DIR}/get.expect-success.hurl;
 
 # PUT: SUCCESS
 for s in 1 5 10 20; do
-  sed "s/__testfile__/${s}MB.file/g" put.expect-success.tmpl.hurl >> ${RUN_DIR}/put.expect-success.hurl;
+  sed "s/__testfile__/${s}MB.file/g" put-delete.expect-success.tmpl.hurl >> ${RUN_DIR}/put-delete.expect-success.hurl;
 done
 # PUT: FAILURE
 for s in 21 40; do
@@ -39,6 +39,6 @@ cd $RUN_DIR
 hurl --fail-at-end $* --test \
   head.expect-success.hurl \
   get.expect-success.hurl \
-  put.expect-success.hurl \
+  put-delete.expect-success.hurl \
   put.expect-failure.hurl \
 ;

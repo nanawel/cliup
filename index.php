@@ -1,4 +1,5 @@
 <?php
+use Fig\Http\Message\StatusCodeInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Factory\AppFactory;
@@ -22,7 +23,7 @@ if ($context['BASE_URL']) {
 
 $app->map(['HEAD'], '/', function (Request $request, Response $response, $args) use ($context) {
     $response = $response
-        ->withStatus(\Fig\Http\Message\StatusCodeInterface::STATUS_NO_CONTENT)
+        ->withStatus(StatusCodeInterface::STATUS_NO_CONTENT)
         ->withHeader('CLIup-Version', $context['APP_VERSION'])
         ->withHeader('CLIup-Expiration-Time', $context['EXPIRATION_TIME'])
         ->withHeader('CLIup-Max-Upload-Size', $context['MAX_UPLOAD_SIZE'])
@@ -31,6 +32,11 @@ $app->map(['HEAD'], '/', function (Request $request, Response $response, $args) 
     ;
 
     return $response;
+});
+
+// Special handler for /favicon.ico to prevent unnecessary log pollution
+$app->get('/favicon.ico', function (Request $request, Response $response, $args) use ($context) {
+    return $response->withStatus(StatusCodeInterface::STATUS_NOT_FOUND);
 });
 
 $app->get('/', function (Request $request, Response $response, $args) use ($context) {
@@ -112,11 +118,14 @@ $app->get('/{password}[/{upload_name}]', function (Request $request, Response $r
         ;
     } catch (\Throwable $e) {
         \CLiup\log(
-            "Got exception while trying to access the file $uploadHash with password {$args['password']}:\n$e.",
+            "Got exception while trying to access the file $uploadHash with password {$args['password']}:\n$e",
             'ERROR'
         );
         $response->getBody()->write("ERROR: No file found with that password, or it has expired.\n");
-        return $response->withStatus(404, 'No file found with that password, or it has expired');
+        return $response->withStatus(
+            StatusCodeInterface::STATUS_NOT_FOUND,
+            'No file found with that password, or it has expired'
+        );
     }
 
     \CLiup\log(sprintf(
@@ -133,11 +142,11 @@ $app->get('/{password}[/{upload_name}]', function (Request $request, Response $r
 $app->delete('/{password}', function (Request $request, Response $response, $args) {
     global $context;
 
-    $uploadHash = \CLiup\getUploadHash($args['password']);
-    $filePath = \CLiup\getUploadFilePath($uploadHash);
-    $metadataFilePath = \CLiup\getUploadMetadataFilePath($uploadHash);
-
     try {
+        $uploadHash = \CLiup\getUploadHash($args['password']);
+        $filePath = \CLiup\getUploadFilePath($uploadHash);
+        $metadataFilePath = \CLiup\getUploadMetadataFilePath($uploadHash);
+
         if (!is_file($filePath)) {
             throw new \Exception('File not found');
         }
@@ -159,11 +168,14 @@ $app->delete('/{password}', function (Request $request, Response $response, $arg
     }
     catch (\Throwable $e) {
         \CLiup\log(
-            "Got exception while trying to delete the file $uploadHash with password {$args['password']}:\n$e.",
+            "Got exception while trying to delete the file $uploadHash with password {$args['password']}:\n$e",
             'ERROR'
         );
         $response->getBody()->write("ERROR: No file found with that password, or it has expired.\n");
-        return $response->withStatus(404, 'No file found with that password, or it has expired');
+        return $response->withStatus(
+            StatusCodeInterface::STATUS_NOT_FOUND,
+            'No file found with that password, or it has expired'
+        );
     }
 
 
@@ -173,7 +185,10 @@ $app->delete('/{password}', function (Request $request, Response $response, $arg
     } else {
         \CLiup\log("File $uploadHash with password {$args['password']} could not be deleted.", 'ERROR');
         $response->getBody()->write("ERROR: Sorry, unable to delete the file.\n");
-        return $response->withStatus(500, 'Sorry, unable to delete the file');
+        return $response->withStatus(
+            StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR,
+            'Sorry, unable to delete the file'
+        );
     }
 
     return $response;
@@ -181,7 +196,7 @@ $app->delete('/{password}', function (Request $request, Response $response, $arg
 
 $rootHandler = function (Request $request, Response $response, $args) {
     $response->getBody()->write("ERROR: Please specify the name of your upload using the path. Ex: /myupload.gif\n");
-    return $response->withStatus(400);
+    return $response->withStatus(StatusCodeInterface::STATUS_BAD_REQUEST);
 };
 $app->post('/', $rootHandler);
 $app->put('/', $rootHandler);
@@ -208,12 +223,12 @@ $app->put('/{uploadname}', function (Request $request, Response $response, $args
     if (($filesize = strlen($fileContent)) > $context['MAX_UPLOAD_SIZE']) {
         \CLiup\log("File is too big: $filesize bytes (limit = {$context['MAX_UPLOAD_SIZE']} bytes).", 'ERROR');
         $response->getBody()->write("ERROR: File is too big!\n");
-        return $response->withStatus(400, 'File is too big!');
+        return $response->withStatus(StatusCodeInterface::STATUS_PAYLOAD_TOO_LARGE, 'File is too big!');
     }
     if (!file_put_contents($file = $context['TMP_DIR'] . '/' . uniqid('CLIUP_tmp_'), $fileContent)) {
         \CLiup\log("Could not write file data to $file (filesize = $filesize).", 'ERROR');
         $response->getBody()->write("ERROR: Upload has failed.\n");
-        return $response->withStatus(400, 'Upload has failed');
+        return $response->withStatus(StatusCodeInterface::STATUS_BAD_REQUEST, 'Upload has failed');
     }
 
     $response = \CLiup\processUploadedFiles(

@@ -24,7 +24,7 @@ namespace {
         $pt1h = (new DateTime())->setTimeStamp(0)->add(new \DateInterval('PT1H'))->getTimeStamp();
         $pt1m = (new DateTime())->setTimeStamp(0)->add(new \DateInterval('PT1M'))->getTimeStamp();
 
-        $result['seconds'] = $seconds = (new DateTime())->setTimeStamp(0)->add($interval)->getTimeStamp();
+        $result['seconds'] = (new DateTime())->setTimeStamp(0)->add($interval)->getTimeStamp();
         $result['years'] = (int) ($result['seconds'] / $p1y);
         $result['months'] = (int) (($result['seconds'] = ($result['seconds'] - ($p1y * $result['years']))) / $p1m);
         $result['days'] = (int) (($result['seconds'] = ($result['seconds'] - ($p1m * $result['months']))) / $p1d);
@@ -65,11 +65,9 @@ namespace {
 namespace CLiup {
 
     use Defuse\Crypto\File;
-    use Defuse\Crypto\Key;
-    use Psr\Http\Message\StreamInterface;
+    use Fig\Http\Message\StatusCodeInterface;
     use Slim\Psr7\Request;
     use Slim\Psr7\Response;
-    use Slim\Psr7\Stream;
 
     function log($message, $level = 'INFO') {
         file_put_contents('php://stderr', date('c') . " $level $message\n");
@@ -192,26 +190,30 @@ namespace CLiup {
         global $context,
             $MEMORY_USAGE_START;
 
-        if (empty($files)) {
-            log("Upload error, no file has been provided.", 'ERROR');
-            $response->getBody()->write("ERROR: No file has been provided.\n");
-            return $response->withStatus(400, 'No file has been provided');
-        }
-        if (count($files) > 1) {
-            log("Upload error, more than one file has been provided.", 'ERROR');
-            $response->getBody()->write("ERROR: Only one file is allowed per call.\n");
-            return $response->withStatus(400, 'Only one file is allowed per call');
-        }
-        $file = current($files);
-        $uploadName = basename(substr($uploadName, 0, $context['UPLOAD_NAME_MAX_LEN']));
-
-        $password = generatePassword();
         try {
+            if (empty($files)) {
+                log("Upload error, no file has been provided.", 'ERROR');
+                $response->getBody()->write("ERROR: No file has been provided.\n");
+                return $response->withStatus(StatusCodeInterface::STATUS_BAD_REQUEST, 'No file has been provided');
+            }
+            if (count($files) > 1) {
+                log("Upload error, more than one file has been provided.", 'ERROR');
+                $response->getBody()->write("ERROR: Only one file is allowed per call.\n");
+                return $response->withStatus(StatusCodeInterface::STATUS_BAD_REQUEST, 'Only one file is allowed per call');
+            }
+            $file = current($files);
+            $uploadName = basename(substr($uploadName, 0, $context['UPLOAD_NAME_MAX_LEN']));
+
+            $password = generatePassword();
+
             moveUploadedFile($file, $uploadName, $password);
         } catch (\Throwable $e) {
-            log("Upload error, could not save file.", 'ERROR');
+            log("Upload error, could not move uploaded file:\n$e", 'ERROR');
             $response->getBody()->write("ERROR: Could not save file, sorry.\n");
-            return $response->withStatus(500, 'Could not save file, sorry');
+            return $response->withStatus(
+                StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR,
+                'Could not save file, sorry'
+            );
         }
 
         $response = $response
@@ -233,8 +235,6 @@ namespace CLiup {
      * @return resource
      */
     function getUploadFileStream(string $password) {
-        global $context;
-
         $uploadHash = getUploadHash($password);
         $filePath = getUploadFilePath($uploadHash);
         $metadata = getUploadMetadata($uploadHash);
