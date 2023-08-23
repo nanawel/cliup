@@ -69,11 +69,14 @@ foundation-balance-february
 
 ```shell
 # Use the password you got previously
-$ curl http://myhost.tld/institute-crisis-individual > myfile.bin
+$ curl http://myhost.tld/institute-crisis-individual -J
 
 # Or with wget
-$ wget http://myhost.tld/institute-crisis-individual -O myfile.bin -q
+$ wget http://myhost.tld/institute-crisis-individual -q --content-disposition
 ```
+
+In these examples, the `-J` flag (resp. `--content-disposition`) tells `curl` (resp. `wget`) to create a file with
+the result data (instead of printing it to the console) and use the original filename (ex from above: `myfile.bin`).
 
 ## Delete
 
