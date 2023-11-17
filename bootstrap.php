@@ -24,6 +24,8 @@ $context = [
     'PASS_WORDS_COUNT'    => min(10, getenv('PASS_WORDS_COUNT') ?: 3),
     'LOG_ACTIVITY'        => ((string) getenv('LOG_ACTIVITY')) !== ''
         ? (bool) getenv('LOG_ACTIVITY') : true,
+    'LOG_PASSWORDS'       => ((string) getenv('LOG_PASSWORDS')) !== ''
+        ? (bool) getenv('LOG_PASSWORDS') : false,
     'MAX_UPLOAD_SIZE'     => getenv('MAX_UPLOAD_SIZE') ?: 1 * 1024 * 1024,              // 1 MB
     'MEMORY_LIMIT'        => getenv('MEMORY_LIMIT') ?: null,
     'TMP_DIR'             => getenv('TMP_DIR') ?: '/tmp',

@@ -156,7 +156,13 @@ namespace CLiup {
             log("Could not write metadata file for $uploadHash.", 'ERROR');
         }
         if ($context['LOG_ACTIVITY']) {
-            log("New file saved: $uploadName with hash $uploadHash ({$metadata['size']} bytes) Password: $password");
+            log(sprintf(
+                'New file saved: %s with hash %s (%d bytes) Password: %s',
+                $uploadName,
+                $uploadHash,
+                $metadata['size'],
+                $context['LOG_PASSWORDS'] ? $password : '*HIDDEN*'
+            ));
         }
     }
 

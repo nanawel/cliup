@@ -25,7 +25,7 @@ $errorMiddleware->setErrorHandler(\Slim\Exception\HttpNotFoundException::class, 
 });
 
 if ($context['BASE_URL']) {
-    $app->setBasePath(rtrim(parse_url($context['BASE_URL'], PHP_URL_PATH), '/'));
+    $app->setBasePath(rtrim(parse_url($context['BASE_URL'], PHP_URL_PATH) ?? '', '/'));
 }
 elseif ($context['BASE_PATH']) {
     $app->setBasePath($context['BASE_PATH']);
