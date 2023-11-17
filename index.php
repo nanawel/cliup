@@ -128,7 +128,12 @@ $app->get('/{password}[/{upload_name}]', function (Request $request, Response $r
         ;
     } catch (\Throwable $e) {
         \CLiup\log(
-            "Got exception while trying to access the file $uploadHash with password {$args['password']}:\n$e",
+            sprintf(
+                "Got exception while trying to access the file %s with password %s:\n%s",
+                $uploadHash,
+                \CLiup\getPasswordForLog($args['password']),
+                $e
+            ),
             'ERROR'
         );
         $response->getBody()->write("ERROR: No file found with that password, or it has expired.\n");
@@ -141,7 +146,7 @@ $app->get('/{password}[/{upload_name}]', function (Request $request, Response $r
     \CLiup\log(sprintf(
         "Sending file %s with password %s (%s). Memory used: %s",
         $uploadHash,
-        $args['password'],
+        \CLiup\getPasswordForLog($args['password']),
         $uploadName,
         byteConvert(memory_get_usage() - $MEMORY_USAGE_START)
     ));
@@ -178,7 +183,12 @@ $app->delete('/{password}', function (Request $request, Response $response, $arg
     }
     catch (\Throwable $e) {
         \CLiup\log(
-            "Got exception while trying to delete the file $uploadHash with password {$args['password']}:\n$e",
+            sprintf(
+                "Got exception while trying to delete the file %s with password %s:\n%s",
+                $uploadHash,
+                \CLiup\getPasswordForLog($args['password']),
+                $e
+            ),
             'ERROR'
         );
         $response->getBody()->write("ERROR: No file found with that password, or it has expired.\n");
@@ -190,10 +200,21 @@ $app->delete('/{password}', function (Request $request, Response $response, $arg
 
 
     if ($success) {
-        \CLiup\log("File $uploadHash with password {$args['password']} has been deleted.");
+        \CLiup\log(sprintf(
+            "File %s with password %s has been deleted.",
+            $uploadHash,
+            \CLiup\getPasswordForLog($args['password'])
+        ));
         $response->getBody()->write("OK, the file has been deleted.\n");
     } else {
-        \CLiup\log("File $uploadHash with password {$args['password']} could not be deleted.", 'ERROR');
+        \CLiup\log(
+            sprintf(
+                "File %s with password %s could not be deleted.",
+                $uploadHash,
+                \CLiup\getPasswordForLog($args['password'])
+            ),
+            'ERROR'
+        );
         $response->getBody()->write("ERROR: Sorry, unable to delete the file.\n");
         return $response->withStatus(
             StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR,

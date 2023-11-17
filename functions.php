@@ -92,6 +92,12 @@ namespace CLiup {
         return implode('-', $passwords);
     }
 
+    function getPasswordForLog($password) {
+        global $context;
+
+        return $context['LOG_PASSWORDS'] ? $password : '*HIDDEN*';
+    }
+
     function getUploadHash(string $password) {
         global $context;
         return sha1($context['HASH_SALT'] . $password);
@@ -161,7 +167,7 @@ namespace CLiup {
                 $uploadName,
                 $uploadHash,
                 $metadata['size'],
-                $context['LOG_PASSWORDS'] ? $password : '*HIDDEN*'
+                getPasswordForLog($password)
             ));
         }
     }
