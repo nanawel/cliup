@@ -17,12 +17,37 @@ if (PHP_SAPI === 'cli') {
 $app = AppFactory::create();
 
 $errorMiddleware = $app->addErrorMiddleware((bool) $context['DEBUG'], true, true);
-$errorMiddleware->setErrorHandler(\Slim\Exception\HttpNotFoundException::class, function () {
-    $response = new \Slim\Psr7\Response();
-    $response->getBody()->write("[404] Not found\n");
+$errorMiddleware->setErrorHandler(
+    RuntimeException::class,
+    function (
+        \Psr\Http\Message\ServerRequestInterface $request,
+        \Throwable $exception,
+        bool $displayErrorDetails,
+        bool $logErrors,
+        bool $logErrorDetails
+    ) {
+        $response = new \Slim\Psr7\Response();
+        switch (true) {
+            case $exception instanceof \Slim\Exception\HttpException:
+                $response->getBody()->write(sprintf(
+                    "[%d] %s\n",
+                    $exception->getCode(),
+                    $exception->getMessage()
+                ));
+                $status = $exception->getCode();
+                break;
+            default:
+                \CLiup\log($exception, 'ERROR');
+                $response->getBody()->write("ERROR: Oops, got unexpected error! ¯\_(ツ)_/¯\n");
+                $response->getBody()->write("       Try again?\n");
+                $status = StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR;
+                break;
+        }
 
-    return $response->withStatus(404);
-});
+        return $response->withStatus($status);
+    },
+    true
+);
 
 if ($context['BASE_URL']) {
     $app->setBasePath(rtrim(parse_url($context['BASE_URL'], PHP_URL_PATH) ?? '', '/'));
