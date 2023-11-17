@@ -68,6 +68,7 @@ namespace CLiup {
     use Fig\Http\Message\StatusCodeInterface;
     use Slim\Psr7\Request;
     use Slim\Psr7\Response;
+    use Slim\Routing\RouteContext;
 
     function log($message, $level = 'INFO') {
         file_put_contents('php://stderr', date('c') . " $level $message\n");
@@ -221,6 +222,12 @@ namespace CLiup {
             ->withHeader('CLIup-File-Password', $password)
             ->withHeader('CLIup-File-Path', sprintf('/%s/%s', $password, $uploadName));
         $response->getBody()->write("File uploaded successfully. The password for your file is:\n$password\n");
+
+        $downloadUrl = RouteContext::fromRequest($request)
+            ->getRouteParser()
+            ->fullUrlFor($request->getUri(), 'download-file', ['password' => $password, 'upload_name' => $uploadName])
+        ;
+        $response->getBody()->write("You can retrieve it using this URL: {$downloadUrl}\n");
 
         log(sprintf(
             "New file uploaded successfully. Memory used: %s",

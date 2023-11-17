@@ -40,7 +40,8 @@ config:
 
 .PHONY: build
 build:
-	docker-compose build $(args)
+	COMPOSE_FILE=docker-compose.build.yml \
+		docker-compose build $(args)
 
 .PHONY: test-docker
 test-docker:

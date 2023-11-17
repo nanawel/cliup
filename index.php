@@ -17,9 +17,11 @@ if (PHP_SAPI === 'cli') {
 $app = AppFactory::create();
 
 if ($context['BASE_URL']) {
-    $app->setBasePath($context['BASE_URL']);
+    $app->setBasePath(parse_url($context['BASE_URL'], PHP_URL_PATH));
 }
-
+elseif ($context['BASE_PATH']) {
+    $app->setBasePath($context['BASE_PATH']);
+}
 
 $app->map(['HEAD'], '/', function (Request $request, Response $response, $args) use ($context) {
     $response = $response
@@ -105,7 +107,7 @@ $app->get('/{password}[/{upload_name}]', function (Request $request, Response $r
         }
 
         $metadata = \CLiup\getUploadMetadata($uploadHash);
-        $uploadName = basename($args['upload_name'] ?? $metadata['upload_name'] ?? 'file');
+        $uploadName = basename($args['upload_name'] ?? $metadata['upload_name'] ?? ('cliup-file-' . date('YmdHisv')));
 
         $response = $response
             ->withHeader('Content-Type', mime_content_type($filePath) ?: 'application/octet-stream')
@@ -137,7 +139,7 @@ $app->get('/{password}[/{upload_name}]', function (Request $request, Response $r
     ));
 
     return $response;
-});
+})->setName('download-file');
 
 $app->delete('/{password}', function (Request $request, Response $response, $args) {
     global $context;

@@ -161,7 +161,8 @@ $ docker exec <your-container> php admin.php purge
 You can use the following environment variables to configure the service:
 
 ```
-    BASE_URL              (default: <empty>)
+    BASE_PATH             (default: <empty> / Example: "/cliup")
+    BASE_URL              (default: <empty> / Example: "https://myhost.tld:8080/cliup")
     DEBUG                 (default: 0)
     ENCRYPTION_ENABLED    (default: 0)
     EXPIRATION_TIME       (default: 86400      => 1 day)
@@ -176,3 +177,5 @@ You can use the following environment variables to configure the service:
     UPLOAD_NAME_MAX_LEN   (default: 255)
     WORDSLIST_FILE        (default: "./wordslist.txt")
 ```
+
+Notice: `BASE_PATH` is ignored if `BASE_URL` is set.
