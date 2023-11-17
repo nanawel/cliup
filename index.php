@@ -16,8 +16,16 @@ if (PHP_SAPI === 'cli') {
 
 $app = AppFactory::create();
 
+$errorMiddleware = $app->addErrorMiddleware((bool) $context['DEBUG'], true, true);
+$errorMiddleware->setErrorHandler(\Slim\Exception\HttpNotFoundException::class, function () {
+    $response = new \Slim\Psr7\Response();
+    $response->getBody()->write("[404] Not found\n");
+
+    return $response->withStatus(404);
+});
+
 if ($context['BASE_URL']) {
-    $app->setBasePath(parse_url($context['BASE_URL'], PHP_URL_PATH));
+    $app->setBasePath(rtrim(parse_url($context['BASE_URL'], PHP_URL_PATH), '/'));
 }
 elseif ($context['BASE_PATH']) {
     $app->setBasePath($context['BASE_PATH']);

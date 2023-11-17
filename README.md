@@ -45,7 +45,7 @@ So if you want to test it, install it on your own server! 👷‍♀️
 # Easiest & shortest, using curl + PUT
 $ curl -T myfile.bin http://myhost.tld
 File uploaded successfully. The password for your file is:
-institute-crisis-individual
+foundation-balance-february
 
 # [Alternative] If you prefer wget or you don't have curl
 # You need to set the name of your file in the path after the host
@@ -69,13 +69,13 @@ foundation-balance-february
 
 ```shell
 # Use the password you got previously
-$ curl http://myhost.tld/institute-crisis-individual -J
+$ curl -OJ http://myhost.tld/foundation-balance-february
 
 # Or with wget
-$ wget http://myhost.tld/institute-crisis-individual -q --content-disposition
+$ wget -q --content-disposition http://myhost.tld/foundation-balance-february
 ```
 
-In these examples, the `-J` flag (resp. `--content-disposition`) tells `curl` (resp. `wget`) to create a file with
+In these examples, the `-OJ` flags (resp. `--content-disposition`) tell `curl` (resp. `wget`) to create a file with
 the result data (instead of printing it to the console) and use the original filename (ex from above: `myfile.bin`).
 
 ## Delete

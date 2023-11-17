@@ -223,11 +223,28 @@ namespace CLiup {
             ->withHeader('CLIup-File-Path', sprintf('/%s/%s', $password, $uploadName));
         $response->getBody()->write("File uploaded successfully. The password for your file is:\n$password\n");
 
-        $downloadUrl = RouteContext::fromRequest($request)
-            ->getRouteParser()
-            ->fullUrlFor($request->getUri(), 'download-file', ['password' => $password, 'upload_name' => $uploadName])
-        ;
+        if ($baseUrl = $context['BASE_URL']) {
+            $downloadUrl = sprintf('%s/%s/%s', rtrim($baseUrl, '/'), $password, $uploadName);
+            $trustedUrl = true;
+        } else {
+            $downloadUrl = RouteContext::fromRequest($request)
+                ->getRouteParser()
+                ->fullUrlFor(
+                    $request->getUri(),
+                    'download-file',
+                    ['password' => $password, 'upload_name' => $uploadName]
+                )
+            ;
+            $trustedUrl = false;
+        }
         $response->getBody()->write("You can retrieve it using this URL: {$downloadUrl}\n");
+        $response->getBody()->write("  cURL: curl -J {$downloadUrl}\n");
+        $response->getBody()->write("  wget: wget -q --content-disposition {$downloadUrl}\n");
+        if (!$trustedUrl) {
+            $response->getBody()->write(
+                "Notice: This URL has been infered and might not be accurate. Set BASE_URL instead to prevent this.\n"
+            );
+        }
 
         log(sprintf(
             "New file uploaded successfully. Memory used: %s",
