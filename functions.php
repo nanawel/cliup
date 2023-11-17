@@ -238,7 +238,7 @@ namespace CLiup {
             $trustedUrl = false;
         }
         $response->getBody()->write("You can retrieve it using this URL: {$downloadUrl}\n");
-        $response->getBody()->write("  cURL: curl -J {$downloadUrl}\n");
+        $response->getBody()->write("  cURL: curl -OJ {$downloadUrl}\n");
         $response->getBody()->write("  wget: wget -q --content-disposition {$downloadUrl}\n");
         if (!$trustedUrl) {
             $response->getBody()->write(
