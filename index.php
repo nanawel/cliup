@@ -86,6 +86,8 @@ $app->get('/', function (Request $request, Response $response, $args) use ($cont
         ]
     );
 
+    $baseUrl = rtrim($context['BASE_URL'], '/') ?: 'https://this.domain';
+
     $response = $response->withHeader('Content-Type', 'text/plain');
     $response->getBody()->write(<<<"EOT"
   _______   ____        
@@ -101,9 +103,9 @@ Maximum file lifetime: $expirationTimeHuman
 
 ** Examples with cURL **
 Simple (using PUT):
-    curl -T myfile.txt https://this.domain
+    curl -T myfile.txt $baseUrl
 Alternative (using POST):
-    curl -F 'data=@myfile.txt' https://this.domain/myfile.txt
+    curl -F 'data=@myfile.txt' $baseUrl/myfile.txt
 
 EOT);
 
