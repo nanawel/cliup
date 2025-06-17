@@ -5,7 +5,10 @@ global $context;
 
 switch ($argv[1] ?? null) {
     case 'purge':
-        $expirationTimeInMinutes = round($context['EXPIRATION_TIME'] / 60);
+        if (!$expirationTimeInMinutes = round($context['EXPIRATION_TIME'] / 60)) {
+            echo "EXPIRATION_TIME is not set. No purge required.\n";
+            break;
+        }
         chdir($context['UPLOAD_DIR']);
         $cmd = sprintf(
             'find . -path "./??/??/*" -type f -mmin +%d -delete',
