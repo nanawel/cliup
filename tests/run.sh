@@ -8,7 +8,7 @@ command -v hurl > /dev/null || { echo >&2 "Sorry, you need hurl for that: https:
 function _cleanup() {
   rm -rf ${RUN_DIR}
 }
-trap _cleanup SIGINT EXIT
+trap _cleanup INT EXIT
 
 mkdir -p $RUN_DIR
 cd $TESTS_DIR
