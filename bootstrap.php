@@ -15,7 +15,6 @@ $context = [
     'APP_BUILD_DATE'      => getenv('CLIUP_BUILD_DATE') ?: getenv('APP_BUILD_DATE') ?: 'unknown',
     'APP_VERSION'         => getenv('CLIUP_VERSION') ?: getenv('APP_VERSION') ?: 'dev',
     'BASE_PATH'           => getenv('BASE_PATH') ?: '',
-    'BASE_URL'            => getenv('BASE_URL') ?: '',
     'DEBUG'               => getenv('DEBUG') ?: false,
     'ENCRYPTION_ENABLED'  => ((string) getenv('ENCRYPTION_ENABLED')) !== ''
         ? (bool) getenv('ENCRYPTION_ENABLED') : false,

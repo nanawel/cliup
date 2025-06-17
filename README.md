@@ -128,8 +128,16 @@ set for the service (see §Configuration below).
 
 Example in your vhost (here for 100 MB max):
 
-```
+```nginxconf
 client_max_body_size 100M;
+```
+
+Also add the following directives in the `location` section:
+
+```nginxconf
+proxy_set_header    X-Forwarded-Proto $scheme;
+proxy_set_header    X-Forwarded-Host $host;
+proxy_set_header    X-Forwarded-Port $server_port;
 ```
 
 ### Apache
@@ -142,6 +150,14 @@ So for a hard limit to 100 MB, this should be:
 ```apacheconf
 LimitRequestBody 104857600
 Proxy100Continue Off
+```
+
+Also add the following directives in your vhost:
+
+```apacheconf
+RequestHeader set X-Forwarded-Proto expr=%{REQUEST_SCHEME}
+RequestHeader set X-Forwarded-Host  expr=%{SERVER_NAME}
+RequestHeader set X-Forwarded-Port  expr=%{SERVER_PORT}
 ```
 
 > See more: https://httpd.apache.org/docs/2.4/fr/mod/mod_proxy.html#proxy100continue
@@ -162,7 +178,6 @@ You can use the following environment variables to configure the service:
 
 ```
     BASE_PATH             (default: <empty> / Example: "/cliup")
-    BASE_URL              (default: <empty> / Example: "https://myhost.tld:8080/cliup")
     DEBUG                 (default: 0)
     ENCRYPTION_ENABLED    (default: 0)
     EXPIRATION_TIME       (default: 86400      => 1 day)
@@ -179,4 +194,9 @@ You can use the following environment variables to configure the service:
     WORDSLIST_FILE        (default: "./wordslist.txt")
 ```
 
-Notice: `BASE_PATH` is ignored if `BASE_URL` is set.
+Note: `BASE_URL` is deprecated. Use the following variables instead (or their corresponding headers set
+      from your reverse-proxy) to allow the proper generation of URLs by the app:
+
+- `HTTP_FORWARDED_PROTO` / `X-Forwarded-Proto`
+- `HTTP_FORWARDED_HOST`  / `X-Forwarded-Host`
+- `HTTP_FORWARDED_PORT`  / `X-Forwarded-Port`

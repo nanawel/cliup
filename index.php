@@ -2,7 +2,9 @@
 use Fig\Http\Message\StatusCodeInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use Psr\Http\Server\RequestHandlerInterface;
 use Slim\Factory\AppFactory;
+use Slim\Routing\RouteContext;
 
 require __DIR__ . '/bootstrap.php';
 global $context;
@@ -13,6 +15,10 @@ if (PHP_SAPI === 'cli') {
 
     exit(0);
 }
+
+// ============================================================================
+//  APP INIT
+// ============================================================================
 
 $app = AppFactory::create();
 
@@ -49,12 +55,51 @@ $errorMiddleware->setErrorHandler(
     true
 );
 
-if ($context['BASE_URL']) {
-    $app->setBasePath(rtrim(parse_url($context['BASE_URL'], PHP_URL_PATH) ?? '', '/'));
-}
-elseif ($context['BASE_PATH']) {
+if ($context['BASE_PATH']) {
     $app->setBasePath($context['BASE_PATH']);
 }
+
+// ============================================================================
+//  MIDDLEWARES
+// ============================================================================
+
+// Proper handling of public URLs when behing a reverse-proxy
+$app->add(function (Request $request, RequestHandlerInterface $handler) use ($app) {
+    $uri = $request->getUri();
+
+    // Scheme/proto
+    $scheme = getenv('HTTP_FORWARDED_PROTO')
+        ?: $request->getHeaderLine('X-Forwarded-Proto')
+        ?: $uri->getScheme();
+    if ($scheme !== $uri->getScheme()) {
+        $uri = $uri->withScheme($scheme);
+        $request = $request->withUri($uri);
+    }
+
+    // Host
+    $host = getenv('HTTP_FORWARDED_HOST')
+        ?: $request->getHeaderLine('X-Forwarded-Host')
+        ?: $uri->getHost();
+    if ($host !== $uri->getHost()) {
+        $uri = $uri->withHost($host);
+        $request = $request->withUri($uri);
+    }
+
+    // Port
+    $port = getenv('HTTP_FORWARDED_PORT')
+        ?: $request->getHeaderLine('X-Forwarded-Port')
+            ?: $uri->getPort();
+    if ($port !== $uri->getPort()) {
+        $uri = $uri->withPort($port);
+        $request = $request->withUri($uri);
+    }
+
+    return $handler->handle($request);
+});
+
+// ============================================================================
+//  ROUTES
+// ============================================================================
 
 $app->map(['HEAD'], '/', function (Request $request, Response $response, $args) use ($context) {
     $response = $response
@@ -86,7 +131,10 @@ $app->get('/', function (Request $request, Response $response, $args) use ($cont
         ]
     );
 
-    $baseUrl = rtrim($context['BASE_URL'], '/') ?: 'https://this.domain';
+    $baseUrl = rtrim(
+        RouteContext::fromRequest($request)->getRouteParser()->fullUrlFor($request->getUri(), 'index'),
+        '/'
+    );
 
     $response = $response->withHeader('Content-Type', 'text/plain');
     $response->getBody()->write(<<<"EOT"
@@ -118,7 +166,7 @@ EOT);
     }
 
     return $response;
-});
+})->setName('index');
 
 $app->get('/{password}[/{upload_name}]', function (Request $request, Response $response, $args) {
     global $context,
