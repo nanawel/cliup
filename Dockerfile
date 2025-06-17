@@ -1,4 +1,4 @@
-FROM php:8-alpine3.18
+FROM php:8-alpine3.22
 
 ARG build_version
 ARG build_id

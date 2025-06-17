@@ -36,7 +36,7 @@ done
 
 cd $RUN_DIR
 
-hurl --fail-at-end $* --test \
+hurl --continue-on-error $* --test \
   head.expect-success.hurl \
   get.expect-success.hurl \
   put-delete.expect-success.hurl \
