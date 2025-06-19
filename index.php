@@ -86,9 +86,9 @@ $app->add(function (Request $request, RequestHandlerInterface $handler) use ($ap
     }
 
     // Port
-    $port = getenv('HTTP_FORWARDED_PORT')
+    $port = (int) (getenv('HTTP_FORWARDED_PORT')
         ?: $request->getHeaderLine('X-Forwarded-Port')
-            ?: $uri->getPort();
+        ?: $uri->getPort());
     if ($port !== $uri->getPort()) {
         $uri = $uri->withPort($port);
         $request = $request->withUri($uri);
