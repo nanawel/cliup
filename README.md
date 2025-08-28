@@ -185,7 +185,6 @@ You can use the following environment variables to configure the service:
     PASS_WORDS_COUNT      (default: 3)
     LOG_ACTIVITY          (default: 1)
     LOG_PASSWORDS         (default: 0)
-    MAX_UPLOAD_SIZE       (default: 1048576    => 1 MB)
     TMP_DIR               (default: "/tmp")
     TRACE_CLIENT_INFO     (default: 1)
     UPLOAD_DIR            (default: "/tmp" or "/uploads" on Docker)

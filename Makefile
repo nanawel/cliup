@@ -1,7 +1,6 @@
-PHP_INI_ARGS ?=
+PHP_ARGS ?=
 LISTEN_HOST  ?= localhost
 LISTEN_PORT  ?= 8080
-MEMORY_LIMIT ?= 256M
 
 .PHONY: words-download
 words-download:
@@ -24,9 +23,9 @@ words-filter:
 
 .PHONY: server-start
 server-start:
-	php -c php.ini $(PHP_INI_ARG) \
-		-d memory_limit=$(MEMORY_LIMIT) \
+	php -c php.ini \
 		-S $(LISTEN_HOST):$(LISTEN_PORT) \
+		$(PHP_ARGS) \
 		index.php
 
 .PHONY: doc-generate-demo-gif

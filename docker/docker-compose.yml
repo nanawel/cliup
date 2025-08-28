@@ -12,4 +12,6 @@ services:
       # 2 days
       EXPIRATION_TIME: 172800
       # 200 MB
-      MAX_UPLOAD_SIZE: 209715200
+      MAX_UPLOAD_FILESIZE: 209715200
+      # 200 MB + 512B (overhead)
+      POST_MAX_SIZE: 209715712

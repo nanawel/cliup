@@ -311,35 +311,42 @@ $app->post('/{uploadname}', function (Request $request, Response $response, $arg
     /** @var \Slim\Psr7\UploadedFile[] $files */
     $files = $request->getUploadedFiles();
 
-    $fileObjects = [];
-    array_walk_recursive($files, function ($it) use (&$fileObjects) {
-        if ($it instanceof \Slim\Psr7\UploadedFile) {
-            $fileObjects[] = $it;
-        }
-    });
+    if (empty($files) || current($files)->getError()) {
+        $response->getBody()->write("ERROR: Upload has failed. Is the file too big?\n");
+        return $response->withStatus(StatusCodeInterface::STATUS_BAD_REQUEST, 'Upload has failed');
+    }
 
-    $response = \CLiup\processUploadedFiles($args['uploadname'], $fileObjects, $request, $response);
+    $response = \CLiup\processUploadedFiles($args['uploadname'], $files, $request, $response);
 
     return $response;
 });
 
 $app->put('/{uploadname}', function (Request $request, Response $response, $args) {
     global $context;
-    $fileContent = $request->getBody()->getContents();
-    if (($filesize = strlen($fileContent)) > $context['MAX_UPLOAD_SIZE']) {
-        \CLiup\log("File is too big: $filesize bytes (limit = {$context['MAX_UPLOAD_SIZE']} bytes).", 'ERROR');
-        $response->getBody()->write("ERROR: File is too big!\n");
-        return $response->withStatus(StatusCodeInterface::STATUS_PAYLOAD_TOO_LARGE, 'File is too big!');
-    }
-    if (!file_put_contents($file = $context['TMP_DIR'] . '/' . uniqid('CLIUP_tmp_'), $fileContent)) {
-        \CLiup\log("Could not write file data to $file (filesize = $filesize).", 'ERROR');
-        $response->getBody()->write("ERROR: Upload has failed.\n");
-        return $response->withStatus(StatusCodeInterface::STATUS_BAD_REQUEST, 'Upload has failed');
+    $filesize = 0;
+    $tmpFilename = $context['TMP_DIR'] . '/' . uniqid('CLIUP_tmp_');
+    $tmpFile = new \Slim\Psr7\Stream(fopen($tmpFilename, 'w'));
+    try {
+        while ($chunk = $request->getBody()->read(1024*1024)) {
+            $filesize += strlen($chunk);
+            if ($filesize > $context['MAX_UPLOAD_SIZE']) {
+                \CLiup\log("File is too big: $filesize bytes or more (limit = {$context['MAX_UPLOAD_SIZE']} bytes).", 'ERROR');
+                $response->getBody()->write("ERROR: File is too big!\n");
+                return $response->withStatus(StatusCodeInterface::STATUS_PAYLOAD_TOO_LARGE, 'File is too big!');
+            }
+            if (!$tmpFile->write($chunk)) {
+                \CLiup\log("Could not write file data to $tmpFile (filesize = $filesize).", 'ERROR');
+                $response->getBody()->write("ERROR: Upload has failed.\n");
+                return $response->withStatus(StatusCodeInterface::STATUS_BAD_REQUEST, 'Upload has failed');
+            }
+        }
+    } finally {
+        $tmpFile->close();
     }
 
     $response = \CLiup\processUploadedFiles(
         $args['uploadname'],
-        [new \Slim\Psr7\UploadedFile($file, $args['uploadname'], null, filesize($file))],
+        [new \Slim\Psr7\UploadedFile($tmpFilename, $args['uploadname'], null, filesize($tmpFilename))],
         $request,
         $response
     );

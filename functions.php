@@ -70,10 +70,6 @@ namespace CLiup {
     use Slim\Psr7\Response;
     use Slim\Routing\RouteContext;
 
-    function log($message, $level = 'INFO') {
-        file_put_contents('php://stderr', date('c') . " $level $message\n");
-    }
-
     function generatePassword() {
         global $context;
         $dictFile = new \SplFileObject($context['WORDSLIST_FILE']);
