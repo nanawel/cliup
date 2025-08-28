@@ -33,6 +33,14 @@ done
 for s in 21 40; do
   sed "s/__testfile__/${s}MB.file/g" put.expect-failure.tmpl.hurl >> ${RUN_DIR}/put.expect-failure.hurl;
 done
+# POST: SUCCESS
+for s in 1 5 10 20; do
+  sed "s/__testfile__/${s}MB.file/g" post-delete.expect-success.tmpl.hurl >> ${RUN_DIR}/post-delete.expect-success.hurl;
+done
+# POST: FAILURE
+for s in 21 40; do
+  sed "s/__testfile__/${s}MB.file/g" post.expect-failure.tmpl.hurl >> ${RUN_DIR}/post.expect-failure.hurl;
+done
 
 cd $RUN_DIR
 
@@ -41,4 +49,6 @@ hurl --continue-on-error $* --test \
   get.expect-success.hurl \
   put-delete.expect-success.hurl \
   put.expect-failure.hurl \
+  post-delete.expect-success.hurl \
+  post.expect-failure.hurl \
 ;
