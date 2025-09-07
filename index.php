@@ -194,6 +194,7 @@ $app->get('/{password}[/{upload_name}]', function (Request $request, Response $r
 
         $response = $response
             ->withHeader('Content-Type', mime_content_type($filePath) ?: 'application/octet-stream')
+            ->withHeader('Content-Length', $metadata['size'] ?? 'unknown')
             ->withHeader('Content-Disposition', 'attachment; filename=' . $uploadName)
             ->withAddedHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
             ->withHeader('Cache-Control', 'post-check=0, pre-check=0')
